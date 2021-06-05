@@ -1,54 +1,67 @@
-const int motor1pin1 = 2;
-const int motor1pin2 = 3;
-const int motor2pin1 = 4;
-const int motor2pin2 = 5;
-const int pwm1 = 9;
+#include <SoftwareSerial.h>
 
-void setup() {
-  // put your setup code here, to run once:
-   Serial.begin(9600);
-    
-  pinMode(motor1pin1, OUTPUT);
-  pinMode(motor1pin2, OUTPUT);
-  pinMode(motor2pin1, OUTPUT);
-  pinMode(motor2pin2, OUTPUT);
+#include <TinyGPS.h>
 
-  pinMode(pwm1, OUTPUT);
+/* This sample code demonstrates the normal use of a TinyGPS object.
+   It requires the use of SoftwareSerial, and assumes that you have a
+   4800-baud serial GPS device hooked up on pins 4(rx) and 3(tx).
+*/
 
-  digitalWrite(motor1pin1, LOW);
-  digitalWrite(motor2pin1, LOW);
-  digitalWrite(motor1pin2, HIGH);
-  digitalWrite(motor2pin2, HIGH);
+TinyGPS gps;
+SoftwareSerial ss(3, 4);
+
+void setup()
+{
+  Serial.begin(9600);
+  ss.begin(9600);
+  
+  Serial.print("Simple TinyGPS library v. "); Serial.println(TinyGPS::library_version());
+  Serial.println("by Mikal Hart");
+  Serial.println();
 }
 
-void drive(int d, int p){
-  analogWrite(pwm1, p);
-    
-  if (d == 0){
-    digitalWrite(motor1pin1, LOW);
-    digitalWrite(motor2pin1, LOW);
-    digitalWrite(motor1pin2, HIGH);
-    digitalWrite(motor2pin2, HIGH);
+void loop()
+{
+  bool newData = false;
+  unsigned long chars;
+  unsigned short sentences, failed;
+
+  // For one second we parse GPS data and report some key values
+  for (unsigned long start = millis(); millis() - start < 1000;)
+  {
+    while (ss.available())
+    {
+      char c = ss.read();
+      //Serial.write(c); // uncomment this line if you want to see the GPS data flowing
+      if (gps.encode(c)) // Did a new valid sentence come in?
+        newData = true;
+    }
   }
 
-  else{
-    digitalWrite(motor1pin1, HIGH);
-    digitalWrite(motor2pin1, HIGH);
-    digitalWrite(motor1pin2, LOW);
-    digitalWrite(motor2pin2, LOW);
+  if (newData)
+  {
+    float flat, flon;
+    unsigned long age;
+    gps.f_get_position(&flat, &flon, &age);
+    //Serial.print("LAT=");
+    Serial.print(flat == TinyGPS::GPS_INVALID_F_ANGLE ? 0.0 : flat, 6);
+    Serial.print(" ");
+    //Serial.print(" LON=");
+    Serial.print(flon == TinyGPS::GPS_INVALID_F_ANGLE ? 0.0 : flon, 6);
+    Serial.println(""); /*
+    Serial.print(" SAT=");
+    Serial.print(gps.satellites() == TinyGPS::GPS_INVALID_SATELLITES ? 0 : gps.satellites());
+    Serial.print(" PREC=");
+    Serial.print(gps.hdop() == TinyGPS::GPS_INVALID_HDOP ? 0 : gps.hdop()); */
   }
-}
-
-void stop(){
-  analogWrite(pwm1, 0);
-}
-
-void loop() {
-  // put your main code here, to run repeatedly:   
-  drive(1, 100);
-  delay(1000);
-  stop();
-  drive(0, 200);
-  delay(1000);
-  stop();
+  /*
+  gps.stats(&chars, &sentences, &failed);
+  Serial.print(" CHARS=");
+  Serial.print(chars);
+  Serial.print(" SENTENCES=");
+  Serial.print(sentences);
+  Serial.print(" CSUM ERR=");
+  Serial.println(failed);
+  if (chars == 0)
+    Serial.println("** No characters received from GPS: check wiring **");  */
 }
