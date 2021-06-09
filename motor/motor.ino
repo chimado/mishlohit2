@@ -7,7 +7,7 @@ const int pwm1 = 9;
 void setup() {
   // put your setup code here, to run once:
   
-   Serial.begin(9600);
+  Serial.begin(9600);
     
   pinMode(motor1pin1, OUTPUT);
   pinMode(motor1pin2, OUTPUT);
