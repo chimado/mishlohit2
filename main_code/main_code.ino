@@ -162,7 +162,7 @@ void checkFront(){
    }
 }
 
-// passes an objec that's in front
+// passes an object that's in front
 void passObject(){
   turn(r);
   delay(200);
@@ -181,6 +181,7 @@ void passObject(){
    }
   }
 
+// checks if it's at the target location
 bool atTarget(){
   getGPS();
 
@@ -191,6 +192,7 @@ bool atTarget(){
   return false;
 }
 
+// turns the steering system to the selected direction
 void turn(String directionn){ // l for left, r for right s for straight
   steeringDirection = directionn;
   if (directionn == "l"){ // checks the input
@@ -215,6 +217,7 @@ float calcAngle(float trlat, float trlon){
   return tan((clon - trlon) / (clat - trlat));
 }
 
+// tells the dc motors to which direction to spin and at what speed
 // use drive(direction{f or b}, power {0-255})
 void drive(int d, int p){ 
   analogWrite(mpwm, p); // set power
@@ -320,6 +323,7 @@ void stod(){
   }
 }
 
+// checks if there's enough space for the drive to start
 bool spaceForDriveStart(){
   if (getFLIR() < 30.00 && getFRIR() < 30.00){ // checks if there's any object up to 30 cm in front
     return false;
@@ -331,8 +335,7 @@ bool spaceForDriveStart(){
 }
 
 // all get IR functions operate on the same principles
-// it multiplies the analog input of the selected IR sensor (front left, front right, left and right) by several constants
-// 
+// it multiplies the analog input of the selected IR sensor (front left, front right, left and right) by several constants to calculate the distance of the nearest object to the sensor
 float getFLIR(){
   float distance =  11.58 * pow(analogRead(flir)*0.0048828125, -1.10);
 
@@ -357,7 +360,7 @@ float getRIR(){
   return distance;
 }
 
-// gets the GPS coordniates from the app, and sets tlat and tlon to the correct coordinates
+// gets the GPS coordinates from the app, and sets tlat and tlon to the correct coordinates
 void readGPS(){
   float temp = 0; // stores the coordinates temporarily while they're being retrived
   String temps = ""; // stores the bluetooth message temporarily
