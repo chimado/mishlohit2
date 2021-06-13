@@ -22,9 +22,22 @@ SoftwareSerial ss(10, 9); // sets gps Tx to 9 and Rx to 10
 //  variables
 int phase = 0; // 0 is start of drive, 1 is navigation, 2 is end of drive
 bool authorized = false; // indicates if the connected device is authorized
+String steeringDirection = "s"; // stores the current steering direction, values are "l", "r" and "s"
+int angle; // is the angle from the target
+bool isAfterDrive = false;
 
-// these store the gps coordinates, lat - latitude lon - longitude t - target o - origin
-float tlat, tlon, olat, olon;
+// constants
+// these store the speed pwm values in text form
+const int slow = 170;
+const int medium = 210;
+const int fast = 255;
+// these store the values for the steering
+const String l = "l";
+const String r = "r";
+const String s = "s";
+
+// these store the gps coordinates, lat - latitude lon - longitude t - target o - origin c - current
+float tlat, tlon, olat, olon, clat, clon;
 
 // IO pins
 const int trunkPin = 3;
@@ -65,16 +78,148 @@ void loop() {
   else if (phase == 1){
     nav();
   }
+
+  else{
+    stod();
+  }
 }
 
+// initializes the navigation phase
+void navinit(){
+  float ang1, ang2, ang3; // two variables to calculate the starting angle
+  float lat1, lon1, lat2, lon2, lat3, lon3; // variables to store locations temporarily
+
+  lat1 = clat;
+  lon1 = clon;
+  drive(1, slow);
+  delay(1000);
+  ang1 = calcAngle(lat1, lon1);
+
+  lat2 = clat;
+  lon2 = clon;
+  delay(1000);
+  ang2 = calcAngle(lat2, lon2);
+
+  lat3 = clat;
+  lon3 = clon;
+  delay(1000);
+  ang3 = calcAngle(lat3, lon3);
+
+  angle = (ang1 + ang2 + ang3) / 3; // calculates the angle of the current 
+
+  phase = 1;
+}
+
+// is responsible for the navigation phase
 void nav(){
-   
+  float angled = angle - calcAngle(tlat, tlon); // calculates the angle difference between the current direction and the correct one
+
+  if (atTarget == true && isAfterDrive == true){
+    phase = 0;
+    sstop();
+    loop();
+  }
+
+  else if (atTarget == true){
+    phase = 2;
+    sstop();
+    loop();
+  }
+
+  if (angled > 0){ // this means it needs to turn right
+    turn(r);
+  }
+
+  else if (angled < 0){ // this means it needs to turn left
+    turn(l);
+  }
+
+  else{ // this means it's on the right path
+    turn(s);
+  }
+
+  checkSides();
+  checkFront();
 }
 
-void drive(int d, int p){ // use drive(direction{f or b}, power {0-255})
-  analogWrite(mpwm, p);
+// checks for objects on the sides, reacts accordingly
+void checkSides(){
+  if (getRIR() < 30.00 || getLIR() < 30.00){
+  if (steeringDirection == "l" && getLIR() < 30.00){
+    turn(r);
+   }
+   
+   else if (steeringDirection == "r" && getRIR() < 30.00){
+    turn(l);
+    }
+  }
+}
+
+// checks for objects in front of itself, reacts accordingly
+void checkFront(){
+  if (getFRIR() < 30.00 || getLIR() < 30.00){
+    passObject();
+   }
+}
+
+// passes an objec that's in front
+void passObject(){
+  turn(r);
+  delay(200);
+  checkFront();
+
+  float pd = getLIR(); // the difference between the previous getLIR and the current one
+  delay(100);
+
+  while(abs(pd - getLIR()) > 0.1){ // continues turning until it's perpendicual to the object
+    delay(100);
+    checkFront();
+   }
+
+   if (getLIR() < 30.00){ // makes sure it won't crash into anything
+    checkFront();
+   }
+  }
+
+bool atTarget(){
+  getGPS();
+
+  if (clat - tlat == 0.00 && clon - tlon == 0.00){
+    return true;
+  }
+
+  return false;
+}
+
+void turn(String directionn){ // l for left, r for right s for straight
+  steeringDirection = directionn;
+  if (directionn == "l"){ // checks the input
+    steering.write(180);
+  }
+
+  else if (directionn == "r"){
+    steering.write(0);
+  }
+
+  else{
+    steering.write(90);
+  }
+}
+
+// calculates the angle of a linear function created using the current location and of a target one (not the target one, although it can do that)
+// it needs a target latitude and a target longitude
+// it calculates the angle using tan(dlon / dlan) d is delta
+float calcAngle(float trlat, float trlon){
+  getGPS();
+
+  return tan((clon - trlon) / (clat - trlat));
+}
+
+// use drive(direction{f or b}, power {0-255})
+void drive(int d, int p){ 
+  analogWrite(mpwm, p); // set power
     
-  if (d == 0){
+  if (d == 0){ // if d = o it goes backwards, and if it's it goes forwards
     digitalWrite(motorf, LOW);
     digitalWrite(motorb, HIGH);
   }
@@ -85,11 +230,12 @@ void drive(int d, int p){ // use drive(direction{f or b}, power {0-255})
   }
 }
 
+// stop driving, set speed to 0
 void sstop(){
   analogWrite(mpwm, 0);
 }
 
-// the start of drive phase function, it's responsible for phase 1
+// the start of drive phase function, it's responsible for phases 0 and 2
 void stod(){
   if ((connectionAttempt() == true && isPasswordValid() == true) || authorized == true){ // checks if there's a device attempting to start a connection and if it has a valid password
     authorized = true;
@@ -99,7 +245,7 @@ void stod(){
       trunkState(waitForInput());
     }
 
-    else if (lastMessage == "g"){
+    else if (lastMessage == "g" && isAfterDrive == false){
       Serial.println("recieving gps coordinates, send the latitude before the longitude"); // gps has 6 numbers after the decimal place
       readGPS();
     }
@@ -135,10 +281,21 @@ void stod(){
       if (confirm = true){
         Serial.println("preparing to drive");
         trunkState("0");
-        getGPS();
+        
+        olat = clat;
+        olon = clon;
+        
+        if (isAfterDrive == false){
+          getGPS();
+        }
+
+        else{
+          tlat = olat;
+          tlon = olon;
+        }
 
         if (spaceForDriveStart() == true){
-          phase = 1;
+          navinit();
         }
 
         else{
@@ -151,8 +308,10 @@ void stod(){
       Serial.println("c - connection request");
       Serial.println(" p - password attempt");
       Serial.println(" t - trunk request (0 for closing it and 1 for opening it)");
-      Serial.println("g - gps location incoming");
       Serial.println("d - drive request");
+      if (isAfterDrive == false){
+        Serial.println("g - gps location incoming");
+      }
     }
 
     else{
@@ -162,7 +321,7 @@ void stod(){
 }
 
 bool spaceForDriveStart(){
-  if (getFLIR() < 30.00 && getFRIR < 30.00){ // checks if there's any object up to 30 cm in front
+  if (getFLIR() < 30.00 && getFRIR() < 30.00){ // checks if there's any object up to 30 cm in front
     return false;
   }
 
@@ -251,8 +410,8 @@ void getGPS(){
     gps.f_get_position(&flat, &flon, &age);
 
     // sets the global variables to the current location
-    olat = flat == TinyGPS::GPS_INVALID_F_ANGLE ? 0.0 : flat, 6;
-    olon = flon == TinyGPS::GPS_INVALID_F_ANGLE ? 0.0 : flon, 6;
+    clat = flat == TinyGPS::GPS_INVALID_F_ANGLE ? 0.0 : flat, 6;
+    clon = flon == TinyGPS::GPS_INVALID_F_ANGLE ? 0.0 : flon, 6;
   }
 }
 
