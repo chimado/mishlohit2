@@ -7,7 +7,7 @@
 bluetooth communications dictionary:
 c - connection request
 p - password attempt
-t - trunk request (0  for closing it and 1 for opening it)
+t - trunk request (0 for closing it and 1 for opening it)
 g - gps location incoming
 d - drive request
 h - help
@@ -84,6 +84,14 @@ void loop() {
   }
 }
 
+void debugCheck(){//String debug){
+  if (waitForInput() == "s"){
+    sstop();
+  }
+
+  //Serial.println(debug);
+}
+
 // initializes the navigation phase
 void navinit(){
   float ang1, ang2, ang3; // two variables to calculate the starting angle
@@ -91,7 +99,7 @@ void navinit(){
 
   lat1 = clat;
   lon1 = clon;
-  drive(1, slow);
+  drive(1, medium);
   delay(1000);
   ang1 = calcAngle(lat1, lon1);
 
@@ -105,7 +113,7 @@ void navinit(){
   delay(1000);
   ang3 = calcAngle(lat3, lon3);
 
-  angle = (ang1 + ang2 + ang3) / 3; // calculates the angle of the current 
+  angle = (ang1 + ang2 + ang3) / 3; // calculates the angle of the current direction
 
   phase = 1;
 }
@@ -113,6 +121,7 @@ void navinit(){
 // is responsible for the navigation phase
 void nav(){
   float angled = angle - calcAngle(tlat, tlon); // calculates the angle difference between the current direction and the correct one
+  debugCheck();
 
   if (atTarget == true && isAfterDrive == true){
     phase = 0;
@@ -236,11 +245,13 @@ void drive(int d, int p){
 // stop driving, set speed to 0
 void sstop(){
   analogWrite(mpwm, 0);
+  digitalWrite(motorf, LOW);
+  digitalWrite(motorb, LOW);
 }
 
 // the start of drive phase function, it's responsible for phases 0 and 2
 void stod(){
-  if ((connectionAttempt() == true && isPasswordValid() == true) || authorized == true){ // checks if there's a device attempting to start a connection and if it has a valid password
+  if (authorized == true || (connectionAttempt() == true && isPasswordValid() == true)){ // checks if there's a device attempting to start a connection and if it has a valid password
     authorized = true;
     String lastMessage = waitForInput(); // lastMessage is the last valid message sent by the app
 
@@ -283,7 +294,7 @@ void stod(){
       
       if (confirm = true){
         Serial.println("preparing to drive");
-        trunkState("0");
+        trunkState("1");
         
         olat = clat;
         olon = clon;
@@ -362,15 +373,16 @@ float getRIR(){
 
 // gets the GPS coordinates from the app, and sets tlat and tlon to the correct coordinates
 void readGPS(){
-  float temp = 0; // stores the coordinates temporarily while they're being retrived
+  float temp = 00.000000; // stores the coordinates temporarily while they're being retrived
   String temps = ""; // stores the bluetooth message temporarily
   
   for (int z = 0; z < 2; z++){
-    for (int i = 0; i < 6; i++){
+    for (int i = 0; i < 7; i++){
       temps = waitForInput();
 
       if (temps != "."){
-        temp = temp + float(temps.toInt()) * pow(10.00, -float(i));
+        temp = temp + float(temps.toInt()) * pow(10.00, -float(i - 1));
+        Serial.println(temp);
       }
 
       else{
@@ -431,7 +443,7 @@ void trunkState(String in){
         
       case 1:
         trunk.write(0);
-        Serial.println("opening  trunk");
+        Serial.println("opening trunk");
         break;  
         
     }
@@ -439,7 +451,7 @@ void trunkState(String in){
 }
 
 // checks if there's a connection attempt being made
-// that happens when there's a constant input of "c"
+// that happens when there's an input of "c"
 // if there is a connection attempt it accepts it and returns true, otherwise it returns false
 bool connectionAttempt(){
   if (btread() == "c"){
