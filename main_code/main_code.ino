@@ -101,7 +101,7 @@ void navinit(){
 
   lat1 = clat;
   lon1 = clon;
-  drive(1, medium);
+  drive(1, fast);
   delay(1000);
   ang1 = calcAngle(lat1, lon1);
 
@@ -155,26 +155,37 @@ void nav(){
 
 // checks for objects on the sides, reacts accordingly
 void checkSides(){
-  if (getRIR() < 30.00 || getLIR() < 30.00){
-  if (steeringDirection == "l" && getLIR() < 30.00){
-    turn(r);
-   }
-   
-   else if (steeringDirection == "r" && getRIR() < 30.00){
-    turn(l);
+  if (getRIR() < 40.00 || getLIR() < 40.00){
+    if (steeringDirection == "l" && getLIR() < 40.00){
+      drive(slow, 0);
+      turn(r);
     }
+   
+    else if (steeringDirection == "r" && getRIR() < 40.00){
+      drive(slow, 0);
+      turn(l);
+    }
+  }
+
+  else{
+    drive(fast, 0);
   }
 }
 
 // checks for objects in front of itself, reacts accordingly
 void checkFront(){
-  if (getFRIR() < 30.00 || getLIR() < 30.00){
+  if (getFRIR() < 40.00 || getLIR() < 40.00){
     passObject();
+   }
+
+   else{
+    drive(fast, 0);
    }
 }
 
 // passes an object that's in front
 void passObject(){
+  drive(slow, 0);
   turn(r);
   delay(200);
   checkFront();
@@ -207,11 +218,11 @@ bool atTarget(){
 void turn(String directionn){ // l for left, r for right s for straight
   steeringDirection = directionn;
   if (directionn == "l"){ // checks the input
-    steering.write(180);
+    steering.write(0);
   }
 
   else if (directionn == "r"){
-    steering.write(0);
+    steering.write(180);
   }
 
   else{
@@ -296,8 +307,7 @@ void stod(){
       
       if (confirm = true){
         Serial.println("preparing to drive");
-        trunkState("1");
-        
+                
         if (isAfterDrive == false){
           getGPS();
         }
@@ -340,7 +350,7 @@ void stod(){
 
 // checks if there's enough space for the drive to start
 bool spaceForDriveStart(){
-  if (getFLIR() < 30.00 && getFRIR() < 30.00){ // checks if there's any object up to 30 cm in front
+  if (getFLIR() < 40.00 && getFRIR() < 40.00){ // checks if there's any object up to 30 cm in front
     return false;
   }
 
@@ -353,6 +363,7 @@ bool spaceForDriveStart(){
 // it multiplies the analog input of the selected IR sensor (front left, front right, left and right) by several constants to calculate the distance of the nearest object to the sensor
 float getFLIR(){
   float distance =  11.58 * pow(analogRead(flir)*0.0048828125, -1.10);
+  distance = 40.00;
 
   return distance;
 }
