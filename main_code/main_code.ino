@@ -97,6 +97,8 @@ void navinit(){
   float ang1, ang2, ang3; // two variables to calculate the starting angle
   float lat1, lon1, lat2, lon2, lat3, lon3; // variables to store locations temporarily
 
+  //trunkState("1");
+
   lat1 = clat;
   lon1 = clon;
   drive(1, medium);
@@ -121,7 +123,7 @@ void navinit(){
 // is responsible for the navigation phase
 void nav(){
   float angled = angle - calcAngle(tlat, tlon); // calculates the angle difference between the current direction and the correct one
-  debugCheck();
+  //debugCheck();
 
   if (atTarget == true && isAfterDrive == true){
     phase = 0;
@@ -296,9 +298,6 @@ void stod(){
         Serial.println("preparing to drive");
         trunkState("1");
         
-        olat = clat;
-        olon = clon;
-        
         if (isAfterDrive == false){
           getGPS();
         }
@@ -307,6 +306,11 @@ void stod(){
           tlat = olat;
           tlon = olon;
         }
+
+        olat = clat;
+        olon = clon;
+        Serial.println(olat);
+        Serial.println(olon);
 
         if (spaceForDriveStart() == true){
           navinit();
@@ -377,12 +381,11 @@ void readGPS(){
   String temps = ""; // stores the bluetooth message temporarily
   
   for (int z = 0; z < 2; z++){
-    for (int i = 0; i < 7; i++){
+    for (int i = 0; i < 8; i++){
       temps = waitForInput();
 
       if (temps != "."){
-        temp = temp + float(temps.toInt()) * pow(10.00, -float(i - 1));
-        Serial.println(temp);
+        temp = temp + float(temps.toInt()) * float(1.00 / pow(10.00, float(i - 1)));
       }
 
       else{
