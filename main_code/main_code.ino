@@ -2,6 +2,7 @@
 #include <Servo.h>
 #include <SoftwareSerial.h>
 #include <TinyGPS.h>
+#include <SharpIR.h>
 
 /*
 bluetooth communications dictionary:
@@ -18,6 +19,11 @@ Servo trunk; // creates servo object to control trunk
 Servo steering; // creates servo object to control steering
 TinyGPS gps; // creates gps object
 SoftwareSerial ss(10, 9); // sets gps Tx to 9 and Rx to 10
+SharpIR flir (SharpIR::GP2Y0A41SK0F, A1);
+SharpIR frir (SharpIR::GP2Y0A41SK0F, A2);
+SharpIR lir (SharpIR::GP2Y0A41SK0F, A0);
+SharpIR rir (SharpIR::GP2Y0A41SK0F, A3);
+
 
 //  variables
 int phase = 0; // 0 is start of drive, 1 is navigation, 2 is end of drive
@@ -42,10 +48,6 @@ float tlat, tlon, olat, olon, clat, clon;
 // IO pins
 const int trunkPin = 3;
 const int steeringPin = 5;
-const int flir = 0;
-const int frir = 1;
-const int lir = 2;
-const int rir = 3;
 const int motorb = 7;
 const int motorf = 8;
 const int mpwm = 6;
@@ -71,6 +73,7 @@ void setup() {
 
 void loop() {
   // checks which phase is the code in, and activates functions accordingly
+  /*
   if (phase == 0){
     stod();
   }
@@ -82,6 +85,13 @@ void loop() {
   else{
     stod();
   }
+  */
+  //Serial.println(getFLIR());
+  //Serial.println(getFRIR());
+  //Serial.println(getLIR());
+  Serial.println(getRIR());
+  
+  delay(100);
 }
 
 void debugCheck(){//String debug){
@@ -362,26 +372,25 @@ bool spaceForDriveStart(){
 // all get IR functions operate on the same principles
 // it multiplies the analog input of the selected IR sensor (front left, front right, left and right) by several constants to calculate the distance of the nearest object to the sensor
 float getFLIR(){
-  float distance =  11.58 * pow(analogRead(flir)*0.0048828125, -1.10);
-  distance = 40.00;
+  float distance =  flir.getDistance();
 
   return distance;
 }
 
 float getFRIR(){
-  float distance =  11.58 * pow(analogRead(frir)*0.0048828125, -1.10);
+  float distance =  frir.getDistance();
 
   return distance;
 }
 
 float getLIR(){
-  float distance =  11.58 * pow(analogRead(lir)*0.0048828125, -1.10);
+  float distance =  lir.getDistance();
 
   return distance;
 }
 
 float getRIR(){
-  float distance =  11.58 * pow(analogRead(rir)*0.0048828125, -1.10);
+  float distance =  rir.getDistance();
 
   return distance;
 }

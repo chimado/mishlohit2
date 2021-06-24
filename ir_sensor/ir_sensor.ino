@@ -1,30 +1,22 @@
-int IRpin = 1;  
-float ch = 60;/*
-int counter = 0;
-float pvalue = 0;*/ 
-                                  
-void setup() {
-  Serial.begin(9600);                             
+//import the library in the sketch
+#include <SharpIR.h>
+
+//Create a new instance of the library
+//Call the sensor "sensor"
+//The model of the sensor is "GP2YA41SK0F"
+//The sensor output pin is attached to the pin A0
+SharpIR sensor( SharpIR::GP2Y0A41SK0F, A2 );
+
+void setup()
+{
+  Serial.begin( 9600 ); //Enable the serial comunication
 }
 
-void loop() { // 15 11.58
-  float volts = analogRead(IRpin)*0.0048828125;   
-  float distance = 11.58 * pow(volts, -1.10);
-  Serial.println(distance);
-  /*
-  counter = counter + 1;
-  if (abs(distance * ch - 10) < abs(distance * pvalue - 10)){
-    pvalue = (pvalue + ch) / 2;
-  }
+void loop()
+{
+  int distance = sensor.getDistance(); //Calculate the distance in centimeters and store the value in a variable
 
-  else {
-    ch = (pvalue + ch) / 2;
-  }
+  Serial.println( distance ); //Print the value to the serial monitor
 
-  if (counter == 10){
-    Serial.println(ch);
-    counter = 0;
-  }
-  */
-  delay(100);                                     
+  delay(100);
 }
