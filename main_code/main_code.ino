@@ -14,11 +14,21 @@ d - drive request
 h - help
  */
 
+/*
+ notes for code edits:
+ when there's an object detected the maximum difference between the average value and a random one is around 2
+ max range is around 23 cm
+ when there's no object the difference is way above 2, some values are over 100
+ make the algorithm more aware of past values to more accurately know stuff about the environment
+ */
+
 // misc
 Servo trunk; // creates servo object to control trunk
 Servo steering; // creates servo object to control steering
 TinyGPS gps; // creates gps object
 SoftwareSerial ss(10, 9); // sets gps Tx to 9 and Rx to 10
+
+// ir sensor objects
 SharpIR flir (SharpIR::GP2Y0A41SK0F, A1);
 SharpIR frir (SharpIR::GP2Y0A41SK0F, A2);
 SharpIR lir (SharpIR::GP2Y0A41SK0F, A0);
@@ -370,27 +380,27 @@ bool spaceForDriveStart(){
 }
 
 // all get IR functions operate on the same principles
-// it multiplies the analog input of the selected IR sensor (front left, front right, left and right) by several constants to calculate the distance of the nearest object to the sensor
-float getFLIR(){
-  float distance =  flir.getDistance();
+// they use the library to get the distance from the ir sensor
+int getFLIR(){
+  int distance =  flir.getDistance();
 
   return distance;
 }
 
-float getFRIR(){
-  float distance =  frir.getDistance();
+int getFRIR(){
+  int distance =  frir.getDistance();
 
   return distance;
 }
 
-float getLIR(){
-  float distance =  lir.getDistance();
+int getLIR(){
+  int distance =  lir.getDistance();
 
   return distance;
 }
 
-float getRIR(){
-  float distance =  rir.getDistance();
+int getRIR(){
+  int distance =  rir.getDistance();
 
   return distance;
 }
