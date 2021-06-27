@@ -26,7 +26,6 @@ SharpIR frir (SharpIR::GP2Y0A41SK0F, A2);
 SharpIR lir (SharpIR::GP2Y0A41SK0F, A0);
 SharpIR rir (SharpIR::GP2Y0A41SK0F, A3);
 
-
 //  variables
 int phase = 0; // 0 is start of drive, 1 is navigation, 2 is end of drive
 bool authorized = false; // indicates if the connected device is authorized
@@ -82,15 +81,12 @@ void loop() {
 
   else if (phase == 1){
     nav();
-  }
+  
 
   else{
     stod();
-  }
-  */
-  Serial.println(getIR(rir));
-  
-  delay(100);
+  }*/
+  getGPS();
 }
 
 void debugCheck(){//String debug){
@@ -110,23 +106,38 @@ void navinit(){
 
   lat1 = clat;
   lon1 = clon;
-  drive(1, fast);
-  delay(1000);
+  drive(1, slow);
+  calibrationCheck();
   ang1 = calcAngle(lat1, lon1);
 
   lat2 = clat;
   lon2 = clon;
-  delay(1000);
+  calibrationCheck();
   ang2 = calcAngle(lat2, lon2);
 
   lat3 = clat;
   lon3 = clon;
-  delay(1000);
+  calibrationCheck();
   ang3 = calcAngle(lat3, lon3);
 
   angle = (ang1 + ang2 + ang3) / 3; // calculates the angle of the current direction
 
+  drive(1, fast);
   phase = 1;
+}
+
+// checks if there's an object in front of it during calibration
+void calibrationCheck(){
+  for (int i = 0; i < 1001; i++){
+    if(spaceForDriveStart() == false){
+      sstop();
+      Serial.println("error - not enough space in front to start drive");
+      phase = 0;
+      loop();
+    }
+
+    delay(1);
+  }
 }
 
 // is responsible for the navigation phase
@@ -166,18 +177,18 @@ void nav(){
 void checkSides(){
   if (getIR(rir) < 40.00 || getIR(lir) < 40.00){
     if (steeringDirection == "l" && getIR(lir) < 40.00){
-      drive(slow, 0);
+      drive(1, slow);
       turn(r);
     }
    
     else if (steeringDirection == "r" && getIR(rir) < 40.00){
-      drive(slow, 0);
+      drive(1, slow);
       turn(l);
     }
   }
 
   else{
-    drive(fast, 0);
+    drive(1, fast);
   }
 }
 
@@ -188,14 +199,17 @@ void checkFront(){
    }
 
    else{
-    drive(fast, 0);
+    drive(1, fast);
    }
 }
 
 // passes an object that's in front
 void passObject(){
-  drive(slow, 0);
+  drive(0, slow);
+  delay(200);
+  sstop();
   turn(r);
+  drive(1, slow);
   delay(200);
   checkFront();
 
@@ -253,7 +267,7 @@ float calcAngle(float trlat, float trlon){
 void drive(int d, int p){ 
   analogWrite(mpwm, p); // set power
     
-  if (d == 0){ // if d = o it goes backwards, and if it's it goes forwards
+  if (d == 0){ // if d = o it goes backwards, and if it's 1 it goes forwards
     digitalWrite(motorf, LOW);
     digitalWrite(motorb, HIGH);
   }
@@ -359,7 +373,7 @@ void stod(){
 
 // checks if there's enough space for the drive to start
 bool spaceForDriveStart(){
-  if (getIR(flir) < 40.00 && getIR(frir) < 40.00){ // checks if there's any object up to 30 cm in front
+  if (getIR(flir) < 40.00 && getIR(frir) < 40.00){ // checks if there's any object up to 40 cm in front
     return false;
   }
 
@@ -381,7 +395,7 @@ int getIR(SharpIR sensor){
   
   ldistance = sensor.getDistance();
 
-  if (abs(fdistance - adistance) > 5 && abs(ldistance - adistance) > 5){ // this compares the first and last readings to the average, when there's an invalid reading the sensor will output random data, this prevents that data from being read as accurate data
+  if (abs(fdistance - adistance) > 25 && abs(ldistance - adistance) > 25){ // this compares the first and last readings to the average, when there's an invalid reading the sensor will output random data, this prevents that data from being read as accurate data
     return 40;
   }
 
@@ -443,8 +457,14 @@ void getGPS(){
     gps.f_get_position(&flat, &flon, &age);
 
     // sets the global variables to the current location
-    clat = flat == TinyGPS::GPS_INVALID_F_ANGLE ? 0.0 : flat, 6;
-    clon = flon == TinyGPS::GPS_INVALID_F_ANGLE ? 0.0 : flon, 6;
+    //clat = flat;
+    //clon = flon;
+    Serial.print("LAT=");
+    Serial.print(flat == TinyGPS::GPS_INVALID_F_ANGLE ? 0.0 : flat, 6);
+    Serial.print(" ");
+    Serial.print(" LON=");
+    Serial.print(flon == TinyGPS::GPS_INVALID_F_ANGLE ? 0.0 : flon, 6);
+    Serial.println("");
   }
 }
 
