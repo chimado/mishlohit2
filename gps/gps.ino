@@ -1,5 +1,5 @@
 #include <SoftwareSerial.h>
-
+#include <Servo.h>
 #include <TinyGPS.h>
 
 /* This sample code demonstrates the normal use of a TinyGPS object.
@@ -8,12 +8,16 @@
 */
 
 TinyGPS gps;
-SoftwareSerial ss(3, 4);
+SoftwareSerial ss(11, 12);
+Servo trunk;
 
 void setup()
 {
   Serial.begin(9600);
   ss.begin(9600);
+
+  trunk.attach(3);
+  trunk.write(0);
   
   Serial.print("Simple TinyGPS library v. "); Serial.println(TinyGPS::library_version());
   Serial.println("by Mikal Hart");
@@ -22,6 +26,7 @@ void setup()
 
 void loop()
 {
+  trunk.detach();
   bool newData = false;
   unsigned long chars;
   unsigned short sentences, failed;
@@ -54,6 +59,7 @@ void loop()
     Serial.print(" PREC=");
     Serial.print(gps.hdop() == TinyGPS::GPS_INVALID_HDOP ? 0 : gps.hdop()); */
   }
+  trunk.attach(3);
   /*
   gps.stats(&chars, &sentences, &failed);
   Serial.print(" CHARS=");

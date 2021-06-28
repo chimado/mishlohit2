@@ -18,7 +18,7 @@ h - help
 Servo trunk; // creates servo object to control trunk
 Servo steering; // creates servo object to control steering
 TinyGPS gps; // creates gps object
-SoftwareSerial ss(10, 9); // sets gps Tx to 9 and Rx to 10
+SoftwareSerial ss(11, 12); // sets gps Tx to 11 and Rx to 12
 
 // ir sensor objects
 SharpIR flir (SharpIR::GP2Y0A41SK0F, A1);
@@ -67,6 +67,9 @@ void setup() {
   // set initial values
   trunk.write(0);
   steering.write(90);
+  delay(300);
+  trunk.detach();
+  steering.detach();
   digitalWrite(motorf, LOW);
   digitalWrite(motorb, HIGH);
   sstop();
@@ -74,19 +77,17 @@ void setup() {
 
 void loop() {
   // checks which phase is the code in, and activates functions accordingly
-  /*
   if (phase == 0){
     stod();
   }
 
   else if (phase == 1){
     nav();
-  
+  }  
 
   else{
     stod();
-  }*/
-  getGPS();
+  }
 }
 
 void debugCheck(){//String debug){
@@ -240,6 +241,7 @@ bool atTarget(){
 // turns the steering system to the selected direction
 void turn(String directionn){ // l for left, r for right s for straight
   steeringDirection = directionn;
+  steering.attach(steeringPin);
   if (directionn == "l"){ // checks the input
     steering.write(0);
   }
@@ -251,6 +253,8 @@ void turn(String directionn){ // l for left, r for right s for straight
   else{
     steering.write(90);
   }
+  delay(300);
+  steering.detach();
 }
 
 // calculates the angle of a linear function created using the current location and of a target one (not the target one, although it can do that)
@@ -457,14 +461,8 @@ void getGPS(){
     gps.f_get_position(&flat, &flon, &age);
 
     // sets the global variables to the current location
-    //clat = flat;
-    //clon = flon;
-    Serial.print("LAT=");
-    Serial.print(flat == TinyGPS::GPS_INVALID_F_ANGLE ? 0.0 : flat, 6);
-    Serial.print(" ");
-    Serial.print(" LON=");
-    Serial.print(flon == TinyGPS::GPS_INVALID_F_ANGLE ? 0.0 : flon, 6);
-    Serial.println("");
+    clat = flat == TinyGPS::GPS_INVALID_F_ANGLE ? 0.0 : flat;
+    clon = flon == TinyGPS::GPS_INVALID_F_ANGLE ? 0.0 : flon;
   }
 }
 
@@ -472,6 +470,7 @@ void getGPS(){
 void trunkState(String in){
   if (in == "0" || in == "1"){
     int state = in.toInt();
+    trunk.attach(trunkPin);
 
     switch(state){
       case 0:
@@ -485,6 +484,8 @@ void trunkState(String in){
         break;  
         
     }
+    delay(300);
+    trunk.detach();
   }
 }
 
