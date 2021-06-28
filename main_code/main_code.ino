@@ -35,6 +35,7 @@ bool isAfterDrive = false;
 
 // constants
 // these store the speed pwm values in text form
+const int crawl = 90;
 const int slow = 170;
 const int medium = 210;
 const int fast = 255;
@@ -58,25 +59,19 @@ void setup() {
   ss.begin(9600); // sets baud rate for gps serial
   
   // pin attachment
-  trunk.attach(trunkPin); // attaches the selected pin to the trunk servo object
-  steering.attach(steeringPin); // attaches the selected pin to the steering servo object
   pinMode(motorf, OUTPUT);
   pinMode(motorb, OUTPUT);
   pinMode(mpwm, OUTPUT);
 
   // set initial values
-  trunk.write(0);
-  steering.write(90);
-  delay(300);
-  trunk.detach();
-  steering.detach();
-  digitalWrite(motorf, LOW);
-  digitalWrite(motorb, HIGH);
+  trunkState("1");
+  turn("s");
   sstop();
 }
 
 void loop() {
   // checks which phase is the code in, and activates functions accordingly
+  /*
   if (phase == 0){
     stod();
   }
@@ -87,7 +82,9 @@ void loop() {
 
   else{
     stod();
-  }
+  }*/
+  Serial.println(getIR(lir));
+  delay(200);
 }
 
 void debugCheck(){//String debug){
@@ -103,7 +100,8 @@ void navinit(){
   float ang1, ang2, ang3; // two variables to calculate the starting angle
   float lat1, lon1, lat2, lon2, lat3, lon3; // variables to store locations temporarily
 
-  //trunkState("1");
+  trunkState("0");
+  turn("s");
 
   lat1 = clat;
   lon1 = clon;
@@ -123,7 +121,6 @@ void navinit(){
 
   angle = (ang1 + ang2 + ang3) / 3; // calculates the angle of the current direction
 
-  drive(1, fast);
   phase = 1;
 }
 
@@ -178,18 +175,44 @@ void nav(){
 void checkSides(){
   if (getIR(rir) < 40.00 || getIR(lir) < 40.00){
     if (steeringDirection == "l" && getIR(lir) < 40.00){
-      drive(1, slow);
+      drive(0, medium);
+      delay(500);
+      drive(1, crawl);
       turn(r);
     }
    
     else if (steeringDirection == "r" && getIR(rir) < 40.00){
-      drive(1, slow);
+      drive(0, medium);
+      delay(500);
+      drive(1, crawl);
+      turn(l);
+    }
+
+    else if (isSideClear(lir) == false){
+      turn(r);
+    }
+
+    else if (isSideClear(rir) == false){
       turn(l);
     }
   }
 
   else{
-    drive(1, fast);
+    drive(1, slow);
+  }
+}
+
+bool isSideClear(SharpIR sensor){
+  int tempd = getIR(sensor);
+  if (tempd < 40){
+    delay(100);
+    if (tempd - getIR(sensor) > 2){
+      return false;
+    }
+  }
+
+  else{
+    return true;
   }
 }
 
@@ -200,18 +223,18 @@ void checkFront(){
    }
 
    else{
-    drive(1, fast);
+    drive(1, slow);
    }
 }
 
 // passes an object that's in front
 void passObject(){
-  drive(0, slow);
-  delay(200);
-  sstop();
+  drive(0, medium);
+  turn(l);
+  delay(500);
   turn(r);
-  drive(1, slow);
-  delay(200);
+  drive(1, crawl);
+  delay(500);
   checkFront();
 
   float pd = getIR(lir); // the difference between the previous getLIR and the current one
@@ -251,9 +274,9 @@ void turn(String directionn){ // l for left, r for right s for straight
   }
 
   else{
-    steering.write(90);
+    steering.write(77);
   }
-  delay(300);
+  delay(500);
   steering.detach();
 }
 
@@ -267,7 +290,7 @@ float calcAngle(float trlat, float trlon){
 }
 
 // tells the dc motors to which direction to spin and at what speed
-// use drive(direction{f or b}, power {0-255})
+// use drive(direction{1 or 0}, power {0-255})
 void drive(int d, int p){ 
   analogWrite(mpwm, p); // set power
     
@@ -346,8 +369,13 @@ void stod(){
 
         olat = clat;
         olon = clon;
-        Serial.println(olat);
-        Serial.println(olon);
+
+        if (olat == 0.00 || olon == 0.00){
+          Serial.println("no GPS signal, can't navigate");
+          loop();
+        }
+        Serial.println(olat, 6);
+        Serial.println(olon, 6);
 
         if (spaceForDriveStart() == true){
           navinit();
@@ -377,7 +405,7 @@ void stod(){
 
 // checks if there's enough space for the drive to start
 bool spaceForDriveStart(){
-  if (getIR(flir) < 40.00 && getIR(frir) < 40.00){ // checks if there's any object up to 40 cm in front
+  if (getIR(flir) < 40.00 || getIR(frir) < 40.00 || getIR(rir) < 20 || getIR(lir) < 20){ // checks if there's any object up to 40 cm in front and 20 cm on the sides
     return false;
   }
 
@@ -393,13 +421,17 @@ int getIR(SharpIR sensor){
   int fdistance, ldistance, adistance; // f is first , l is last and a is average
   fdistance = sensor.getDistance();
 
-  for (int i = 0; i > 30; i++){
+  for (int i = 0; i > 70; i++){
     adistance = (adistance + sensor.getDistance()) / 2;
+
+    if (sensor.getDistance() > 23){
+      return 40;
+    }
   }
   
   ldistance = sensor.getDistance();
 
-  if (abs(fdistance - adistance) > 25 && abs(ldistance - adistance) > 25){ // this compares the first and last readings to the average, when there's an invalid reading the sensor will output random data, this prevents that data from being read as accurate data
+  if (abs(fdistance - adistance) > 20 && abs(ldistance - adistance) > 20){ // this compares the first and last readings to the average, when there's an invalid reading the sensor will output random data, this prevents that data from being read as accurate data
     return 40;
   }
 
