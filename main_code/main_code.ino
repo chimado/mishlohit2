@@ -83,7 +83,8 @@ void loop() {
   else{
     stod();
   }*/
-  Serial.println(getIR(lir));
+  //Serial.println(getIR(lir));
+  Serial.println(lir.getDistance());
   delay(200);
 }
 
@@ -418,20 +419,23 @@ bool spaceForDriveStart(){
 // gets the sensor data from an IR proximity sensor using the manifacturer's library
 // it also validates that the reading is accurate
 int getIR(SharpIR sensor){
-  int fdistance, ldistance, adistance; // f is first , l is last and a is average
+  int fdistance, ldistance, adistance, pdistance, tdistance; // f is first , l is last, a is average, p is previous and t is test
   fdistance = sensor.getDistance();
 
-  for (int i = 0; i > 70; i++){
-    adistance = (adistance + sensor.getDistance()) / 2;
+  for (int i = 0; i > 50; i++){
+    tdistance = sensor.getDistance();
+    adistance = (adistance + tdistance) / 2;
 
-    if (sensor.getDistance() > 23){
+    if (tdistance > 40 || abs(adistance - tdistance) > 25 || abs(tdistance - pdistance) > 10){
       return 40;
     }
+
+    pdistance = tdistance;
   }
   
   ldistance = sensor.getDistance();
 
-  if (abs(fdistance - adistance) > 20 && abs(ldistance - adistance) > 20){ // this compares the first and last readings to the average, when there's an invalid reading the sensor will output random data, this prevents that data from being read as accurate data
+  if (abs(fdistance - adistance) > 25 || abs(ldistance - adistance) > 25 || ldistance > 40){ // this compares the first and last readings to the average, when there's an invalid reading the sensor will output random data, this prevents that data from being read as accurate data
     return 40;
   }
 
