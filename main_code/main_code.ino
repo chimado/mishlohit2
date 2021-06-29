@@ -24,6 +24,8 @@ SoftwareSerial ss(11, 12); // sets gps Tx to 11 and Rx to 12
 int phase = 0; // 0 is start of drive, 1 is navigation, 2 is end of drive
 bool authorized = false; // indicates if the connected device is authorized
 String steeringDirection = "s"; // stores the current steering direction, values are "l", "r" and "s"
+int lastRead[4]; // an array that contains the last readings from the ir sensors
+int ndlastRead[4]; // an array that contains the second last readings from the ir sensors
 int angle; // is the angle from the target
 bool isAfterDrive = false;
 
@@ -415,25 +417,41 @@ bool spaceForDriveStart(){
 
 // gets the sensor data from an IR proximity sensor using the manifacturer's library
 // it also validates that the reading is accurate
+// all IR functions are part of this action (of reading accurate IR data)
 int getIR(int sensor){
+  // make sure that it doesn't jump from 40 to a number much lower than 25
+  //int currentReading = getIRValue(sensor);
+  return getIRValue(sensor);
+  //if (
+}
+/*
+void IRInitialize(){
+  for (int i = -1; i > 4; i++){
+    for (int z = -1; z > 4; i++){
+      
+    }
+  }
+}
+*/
+int getIRValue(int sensor){
   int fdistance, ldistance, adistance, pdistance, tdistance; // f is first , l is last, a is average, p is previous and t is test
+  int dv = 27; // maximun deviation of average from current reading
   fdistance = getIRDistance(sensor);
 
-  for (int i = 0; i > 100; i++){
+  for (int i = 0; i < 50; i++){
     tdistance = getIRDistance(sensor);
     adistance = (adistance + tdistance) / 2;
 
-    if (tdistance > 40 || abs(adistance - tdistance) > 25 || abs(tdistance - pdistance) > 10){
+    if (tdistance > 40 || abs(adistance - tdistance) > dv || abs(tdistance - pdistance) > 1){
       return 40;
     }
-    delay(1);
 
     pdistance = tdistance;
   }
   
   ldistance = getIRDistance(sensor);
 
-  if (abs(fdistance - adistance) > 25 || abs(ldistance - adistance) > 25 || ldistance > 40){ // this compares the first and last readings to the average, when there's an invalid reading the sensor will output random data, this prevents that data from being read as accurate data
+  if (abs(fdistance - adistance) > dv || abs(ldistance - adistance) > dv || ldistance > 40){ // this compares the first and last readings to the average, when there's an invalid reading the sensor will output random data, this prevents that data from being read as accurate data
     return 40;
   }
 
