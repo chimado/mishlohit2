@@ -1,4 +1,4 @@
-int IRpin = 1;  
+int IRpin = 0;  
 float ch = 60;/*
 int counter = 0;
 float pvalue = 0;*/ 

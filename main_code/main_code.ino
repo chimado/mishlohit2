@@ -20,12 +20,6 @@ Servo steering; // creates servo object to control steering
 TinyGPS gps; // creates gps object
 SoftwareSerial ss(11, 12); // sets gps Tx to 11 and Rx to 12
 
-// ir sensor objects
-SharpIR flir (SharpIR::GP2Y0A41SK0F, A1);
-SharpIR frir (SharpIR::GP2Y0A41SK0F, A2);
-SharpIR lir (SharpIR::GP2Y0A41SK0F, A0);
-SharpIR rir (SharpIR::GP2Y0A41SK0F, A3);
-
 //  variables
 int phase = 0; // 0 is start of drive, 1 is navigation, 2 is end of drive
 bool authorized = false; // indicates if the connected device is authorized
@@ -53,6 +47,10 @@ const int steeringPin = 5;
 const int motorb = 7;
 const int motorf = 8;
 const int mpwm = 6;
+const int flir = 1;
+const int frir = 2;
+const int lir = 0;
+const int rir = 3;
 
 void setup() {
   Serial.begin(9600); // sets baud rate for arduino serial
@@ -83,8 +81,7 @@ void loop() {
   else{
     stod();
   }*/
-  //Serial.println(getIR(lir));
-  Serial.println(lir.getDistance());
+  Serial.println(getIR(lir));
   delay(200);
 }
 
@@ -203,7 +200,7 @@ void checkSides(){
   }
 }
 
-bool isSideClear(SharpIR sensor){
+bool isSideClear(int sensor){
   int tempd = getIR(sensor);
   if (tempd < 40){
     delay(100);
@@ -418,22 +415,23 @@ bool spaceForDriveStart(){
 
 // gets the sensor data from an IR proximity sensor using the manifacturer's library
 // it also validates that the reading is accurate
-int getIR(SharpIR sensor){
+int getIR(int sensor){
   int fdistance, ldistance, adistance, pdistance, tdistance; // f is first , l is last, a is average, p is previous and t is test
-  fdistance = sensor.getDistance();
+  fdistance = getIRDistance(sensor);
 
-  for (int i = 0; i > 50; i++){
-    tdistance = sensor.getDistance();
+  for (int i = 0; i > 100; i++){
+    tdistance = getIRDistance(sensor);
     adistance = (adistance + tdistance) / 2;
 
     if (tdistance > 40 || abs(adistance - tdistance) > 25 || abs(tdistance - pdistance) > 10){
       return 40;
     }
+    delay(1);
 
     pdistance = tdistance;
   }
   
-  ldistance = sensor.getDistance();
+  ldistance = getIRDistance(sensor);
 
   if (abs(fdistance - adistance) > 25 || abs(ldistance - adistance) > 25 || ldistance > 40){ // this compares the first and last readings to the average, when there's an invalid reading the sensor will output random data, this prevents that data from being read as accurate data
     return 40;
@@ -442,6 +440,12 @@ int getIR(SharpIR sensor){
   else{
     return ldistance;
   }
+}
+
+int getIRDistance(int sensor){
+  float volts = analogRead(sensor)*0.0048828125;   
+  float distance1 = 11.58 * pow(volts, -1.10);
+  return String(distance1).toInt();
 }
 
 // gets the GPS coordinates from the app, and sets tlat and tlon to the correct coordinates
