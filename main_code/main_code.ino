@@ -35,7 +35,7 @@ bool isAfterDrive = false;
 
 // constants
 // these store the speed pwm values in text form
-const int crawl = 90;
+const int crawl = 110;
 const int slow = 170;
 const int medium = 210;
 const int fast = 255;
@@ -82,9 +82,12 @@ void loop() {
 
   else{
     stod();
-  }*/
-  Serial.println(getIR(lir));
-  delay(200);
+  }
+  */
+  //drive(1, crawl);
+  //checkFront();
+  //checkSides();
+  Serial.println("");
 }
 
 void debugCheck(){//String debug){
@@ -102,6 +105,7 @@ void navinit(){
 
   trunkState("0");
   turn("s");
+  delay(100);
 
   lat1 = clat;
   lon1 = clon;
@@ -126,7 +130,7 @@ void navinit(){
 
 // checks if there's an object in front of it during calibration
 void calibrationCheck(){
-  for (int i = 0; i < 1001; i++){
+  for (int i = 0; i < 500; i++){
     if(spaceForDriveStart() == false){
       sstop();
       Serial.println("error - not enough space in front to start drive");
@@ -175,14 +179,14 @@ void nav(){
 void checkSides(){
   if (getIR(rir) < 40.00 || getIR(lir) < 40.00){
     if (steeringDirection == "l" && getIR(lir) < 40.00){
-      drive(0, medium);
+      drive(0, slow);
       delay(500);
       drive(1, crawl);
       turn(r);
     }
    
     else if (steeringDirection == "r" && getIR(rir) < 40.00){
-      drive(0, medium);
+      drive(0, slow);
       delay(500);
       drive(1, crawl);
       turn(l);
@@ -198,7 +202,7 @@ void checkSides(){
   }
 
   else{
-    drive(1, slow);
+    drive(1, crawl);
   }
 }
 
@@ -223,13 +227,13 @@ void checkFront(){
    }
 
    else{
-    drive(1, slow);
+    drive(1, crawl);
    }
 }
 
 // passes an object that's in front
 void passObject(){
-  drive(0, medium);
+  drive(0, slow);
   turn(l);
   delay(500);
   turn(r);
