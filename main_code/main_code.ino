@@ -71,7 +71,6 @@ void setup() {
 
 void loop() {
   // checks which phase is the code in, and activates functions accordingly
-  /*
   if (phase == 0){
     stod();
   }
@@ -83,11 +82,6 @@ void loop() {
   else{
     stod();
   }
-  */
-  //drive(1, crawl);
-  //checkFront();
-  //checkSides();
-  Serial.println("");
 }
 
 void debugCheck(){//String debug){
@@ -177,15 +171,15 @@ void nav(){
 
 // checks for objects on the sides, reacts accordingly
 void checkSides(){
-  if (getIR(rir) < 40.00 || getIR(lir) < 40.00){
-    if (steeringDirection == "l" && getIR(lir) < 40.00){
+  if (getIR(rir) < 40 || getIR(lir) < 40){
+    if (steeringDirection == "l" && getIR(lir) < 40){
       drive(0, slow);
       delay(500);
       drive(1, crawl);
       turn(r);
     }
    
-    else if (steeringDirection == "r" && getIR(rir) < 40.00){
+    else if (steeringDirection == "r" && getIR(rir) < 40){
       drive(0, slow);
       delay(500);
       drive(1, crawl);
@@ -222,7 +216,7 @@ bool isSideClear(SharpIR sensor){
 
 // checks for objects in front of itself, reacts accordingly
 void checkFront(){
-  if (getIR(frir) < 40.00 || getIR(lir) < 40.00){
+  if (getIR(frir) < 40 || getIR(lir) < 40){
     passObject();
    }
 
@@ -241,15 +235,15 @@ void passObject(){
   delay(500);
   checkFront();
 
-  float pd = getIR(lir); // the difference between the previous getLIR and the current one
+  int pd = getIR(lir); // the difference between the previous getLIR and the current one
   delay(100);
 
-  while(abs(pd - getIR(lir)) > 0.1){ // continues turning until it's perpendicual to the object
+  while(abs(pd - getIR(lir)) > 1){ // continues turning until it's perpendicual to the object
     delay(100);
     checkFront();
    }
 
-   if (getIR(lir) < 30.00){ // makes sure it won't crash into anything
+   if (getIR(lir) > 40){ // makes sure it won't crash into anything
     checkFront();
    }
   }
@@ -361,12 +355,9 @@ void stod(){
       
       if (confirm = true){
         Serial.println("preparing to drive");
+        getGPS();
                 
-        if (isAfterDrive == false){
-          getGPS();
-        }
-
-        else{
+        if (isAfterDrive == true){
           tlat = olat;
           tlon = olon;
         }
@@ -375,7 +366,7 @@ void stod(){
         olon = clon;
 
         if (olat == 0.00 || olon == 0.00){
-          Serial.println("no GPS signal, can't navigate");
+          Serial.println("error: no GPS signal, can't navigate");
           loop();
         }
         Serial.println(olat, 6);
@@ -409,7 +400,7 @@ void stod(){
 
 // checks if there's enough space for the drive to start
 bool spaceForDriveStart(){
-  if (getIR(flir) < 40.00 || getIR(frir) < 40.00 || getIR(rir) < 20 || getIR(lir) < 20){ // checks if there's any object up to 40 cm in front and 20 cm on the sides
+  if (getIR(flir) < 40.00 || getIR(frir) < 40.00 || getIR(rir) < 40 || getIR(lir) < 40){ // checks if there's any object up to 40 cm in front or on the sides
     return false;
   }
 
