@@ -35,8 +35,8 @@ bool isAfterDrive = false;
 
 // constants
 // these store the speed pwm values in text form
-const int crawl = 110;
-const int slow = 170;
+const int crawl = 130;
+const int slow = 180;
 const int medium = 210;
 const int fast = 255;
 // these store the values for the steering
@@ -44,8 +44,8 @@ const String l = "l";
 const String r = "r";
 const String s = "s";
 
-// these store the gps coordinates, lat - latitude lon - longitude t - target o - origin c - current
-float tlat, tlon, olat, olon, clat, clon;
+// these store the gps coordinates, lat - latitude lon - longitude t - target o - origin c - current p - previous
+float tlat, tlon, olat, olon, clat, clon, plat, plon;
 
 // IO pins
 const int trunkPin = 3;
@@ -84,18 +84,10 @@ void loop() {
   }
 }
 
-void debugCheck(){//String debug){
-  if (waitForInput() == "s"){
-    sstop();
-  }
-
-  //Serial.println(debug);
-}
-
 // initializes the navigation phase
 void navinit(){
-  float ang1, ang2, ang3; // two variables to calculate the starting angle
-  float lat1, lon1, lat2, lon2, lat3, lon3; // variables to store locations temporarily
+  float ang1, ang2; // two variables to calculate the starting angle
+  float lat1, lon1, lat2, lon2; // variables to store locations temporarily
 
   trunkState("0");
   turn("s");
@@ -112,12 +104,7 @@ void navinit(){
   calibrationCheck();
   ang2 = calcAngle(lat2, lon2);
 
-  lat3 = clat;
-  lon3 = clon;
-  calibrationCheck();
-  ang3 = calcAngle(lat3, lon3);
-
-  angle = (ang1 + ang2 + ang3) / 3; // calculates the angle of the current direction
+  angle = (ang1 + ang2) / 2; // calculates the angle of the current direction
 
   phase = 1;
 }
@@ -139,34 +126,61 @@ void calibrationCheck(){
 // is responsible for the navigation phase
 void nav(){
   float angled = angle - calcAngle(tlat, tlon); // calculates the angle difference between the current direction and the correct one
-  //debugCheck();
 
-  if (atTarget == true && isAfterDrive == true){
+  if (atTarget() == true && isAfterDrive == true){
     phase = 0;
     sstop();
     loop();
   }
 
-  else if (atTarget == true){
+  else if (atTarget() == true){
     phase = 2;
     sstop();
     loop();
   }
 
-  if (angled > 0){ // this means it needs to turn right
+  if (isStuck() == true){
+    drive(1, slow);
+  }
+
+  else if (angled > 5 && angled < 355 && angled > 90 && angled < 270){
+     turnAround();
+  }
+  
+  else if (angled > 5 && angled < 355 && angled > 270){ // this means it needs to turn right
     turn(r);
   }
 
-  else if (angled < 0){ // this means it needs to turn left
+  else if (angled > 5 && angled < 90){ // this means it needs to turn left
     turn(l);
   }
 
   else{ // this means it's on the right path
     turn(s);
   }
-
+  
+  plat = clat;
+  plon = clon;
   checkSides();
   checkFront();
+}
+
+// makes the system turn around 180 degrees
+void turnAround(){
+  turn(r);
+  drive(0, crawl);
+  delay(1000);
+  turn(s);
+  drive(1, crawl);
+}
+
+// checks if it's stuck
+bool isStuck(){
+  if (plat == clat && plon == clon){
+    return true;
+  }
+
+  return false;
 }
 
 // checks for objects on the sides, reacts accordingly
@@ -263,6 +277,7 @@ bool atTarget(){
 void turn(String directionn){ // l for left, r for right s for straight
   steeringDirection = directionn;
   steering.attach(steeringPin);
+
   if (directionn == "l"){ // checks the input
     steering.write(0);
   }
@@ -273,7 +288,9 @@ void turn(String directionn){ // l for left, r for right s for straight
 
   else{
     steering.write(77);
+    delay(500);
   }
+
   delay(500);
   steering.detach();
 }
@@ -417,7 +434,7 @@ int getIR(SharpIR sensor){
   int dv = 20;
   fdistance = sensor.getDistance();
 
-  for (int i = 0; i < 200; i++){
+  for (int i = 0; i < 300; i++){
     cdistance = sensor.getDistance();
     adistance = (adistance + cdistance) / 2;
 
@@ -494,6 +511,7 @@ void getGPS(){
     // sets the global variables to the current location
     clat = flat == TinyGPS::GPS_INVALID_F_ANGLE ? 0.0 : flat;
     clon = flon == TinyGPS::GPS_INVALID_F_ANGLE ? 0.0 : flon;
+    delay(500);
   }
 }
 
@@ -515,7 +533,7 @@ void trunkState(String in){
         break;  
         
     }
-    delay(300);
+    delay(1000);
     trunk.detach();
   }
 }
