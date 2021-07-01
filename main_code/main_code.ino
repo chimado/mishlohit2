@@ -126,6 +126,12 @@ void calibrationCheck(){
 // is responsible for the navigation phase
 void nav(){
   float angled = angle - calcAngle(tlat, tlon); // calculates the angle difference between the current direction and the correct one
+  float angle = calcAngle(plat, plon);
+  Serial.println(angled);
+
+  if (angled < 0){
+    angled = angled + 360;
+  }
 
   if (atTarget() == true && isAfterDrive == true){
     phase = 0;
@@ -266,7 +272,8 @@ void passObject(){
 bool atTarget(){
   getGPS();
 
-  if (clat - tlat == 0.00 && clon - tlon == 0.00){
+  if (abs(clat - tlat) < 0.00001 && abs(clon - tlon) < 0.00001){
+    Serial.println("destination reached");
     return true;
   }
 
@@ -291,7 +298,7 @@ void turn(String directionn){ // l for left, r for right s for straight
     delay(500);
   }
 
-  delay(500);
+  delay(300);
   steering.detach();
 }
 
@@ -431,10 +438,10 @@ bool spaceForDriveStart(){
 // it also validates that the reading is accurate
 int getIR(SharpIR sensor){
   int fdistance, cdistance, ldistance, adistance; // f is first , c is current l is last and a is average
-  int dv = 20;
+  int dv = 15;
   fdistance = sensor.getDistance();
 
-  for (int i = 0; i < 300; i++){
+  for (int i = 0; i < 100; i++){
     cdistance = sensor.getDistance();
     adistance = (adistance + cdistance) / 2;
 
