@@ -39,7 +39,7 @@ const int fast = 255;
 // these store the values for the steering
 const int r = 0;
 const int l = 180;
-const int s = 110;
+const int s = 90;
 
 // these store the gps coordinates, lat - latitude lon - longitude t - target o - origin c - current p - previous
 float tlat, tlon, olat, olon, clat, clon, plat, plon;
@@ -64,12 +64,13 @@ void setup() {
 
   // set initial values
   //trunkState("1");
-  turn(s);
+  //turn(s);
   sstop();
 }
 
 void loop() {
   // checks which phase is the code in, and activates functions accordingly
+  /*
   if (phase == 0){
     stod();
   }
@@ -80,7 +81,13 @@ void loop() {
 
   else{
     stod();
-  }
+  }*/
+  turn(l);
+  delay(1500);
+  turn(r);
+  delay(1500);
+  turn(s);
+  delay(1500);
 }
 
 // initializes the navigation phase
@@ -281,24 +288,22 @@ bool atTarget(){
 
 // turns the steering system to the selected direction
 void turn(int directionn){ // l for left, r for right s for straight
-  useServo(directionn, steeringPin);
+  useServo(directionn, trunkPin);
   steeringDirection = directionn;
 }
 
 // changes the angle of a given servo to a given angle, pangle is the previous angle of the servo
 void useServo(int angle, int servo){
-  serv(500 + (String(12.2222222 * (180 - angle))).toInt(), servo);
-}
+  switch(angle){
+    case 0:
+      analogWrite(servo, 90);
 
-// 500 is 0 degrees, 1500 is 90 and 2200 is 180
-void serv(int del, int servo){
-  digitalWrite(servo, HIGH);
-  delayMicroseconds(del);
-  digitalWrite(servo, LOW);
-  delayMicroseconds(2000 - del);
-  digitalWrite(servo, HIGH);
-  delayMicroseconds(del);
-  digitalWrite(servo, LOW);
+    case 90:
+      analogWrite(servo, 180);
+
+    case 180:
+      analogWrite(servo, 254);
+  }
 }
 
 // calculates the angle of a linear function created using the current location and of a target one (not the target one, although it can do that)
