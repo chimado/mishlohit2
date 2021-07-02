@@ -1,5 +1,4 @@
 // libraries
-#include <Servo.h>
 #include <SoftwareSerial.h>
 #include <TinyGPS.h>
 #include <SharpIR.h>
@@ -15,8 +14,6 @@ h - help
  */
 
 // misc
-Servo trunk; // creates servo object to control trunk
-Servo steering; // creates servo object to control steering
 TinyGPS gps; // creates gps object
 SoftwareSerial ss(11, 12); // sets gps Tx to 11 and Rx to 12
 
@@ -29,7 +26,7 @@ SharpIR rir (SharpIR::GP2Y0A41SK0F, A3);
 //  variables
 int phase = 0; // 0 is start of drive, 1 is navigation, 2 is end of drive
 bool authorized = false; // indicates if the connected device is authorized
-String steeringDirection = "s"; // stores the current steering direction, values are "l", "r" and "s"
+int steeringDirection = 77; // stores the current steering direction, values are "l", "r" and "s"
 int angle; // is the angle from the target
 bool isAfterDrive = false;
 
@@ -40,9 +37,9 @@ const int slow = 180;
 const int medium = 210;
 const int fast = 255;
 // these store the values for the steering
-const String l = "l";
-const String r = "r";
-const String s = "s";
+const int r = 0;
+const int l = 180;
+const int s = 110;
 
 // these store the gps coordinates, lat - latitude lon - longitude t - target o - origin c - current p - previous
 float tlat, tlon, olat, olon, clat, clon, plat, plon;
@@ -62,10 +59,12 @@ void setup() {
   pinMode(motorf, OUTPUT);
   pinMode(motorb, OUTPUT);
   pinMode(mpwm, OUTPUT);
+  pinMode(trunkPin, OUTPUT);
+  pinMode(steeringPin, OUTPUT);
 
   // set initial values
-  trunkState("1");
-  turn("s");
+  //trunkState("1");
+  turn(s);
   sstop();
 }
 
@@ -95,7 +94,7 @@ void navinit(){
 
   lat1 = clat;
   lon1 = clon;
-  drive(1, slow);
+  drive(1, crawl);
   calibrationCheck();
   ang1 = calcAngle(lat1, lon1);
 
@@ -281,25 +280,25 @@ bool atTarget(){
 }
 
 // turns the steering system to the selected direction
-void turn(String directionn){ // l for left, r for right s for straight
+void turn(int directionn){ // l for left, r for right s for straight
+  useServo(directionn, steeringPin);
   steeringDirection = directionn;
-  steering.attach(steeringPin);
+}
 
-  if (directionn == "l"){ // checks the input
-    steering.write(0);
-  }
+// changes the angle of a given servo to a given angle, pangle is the previous angle of the servo
+void useServo(int angle, int servo){
+  serv(500 + (String(12.2222222 * (180 - angle))).toInt(), servo);
+}
 
-  else if (directionn == "r"){
-    steering.write(180);
-  }
-
-  else{
-    steering.write(77);
-    delay(500);
-  }
-
-  delay(300);
-  steering.detach();
+// 500 is 0 degrees, 1500 is 90 and 2200 is 180
+void serv(int del, int servo){
+  digitalWrite(servo, HIGH);
+  delayMicroseconds(del);
+  digitalWrite(servo, LOW);
+  delayMicroseconds(2000 - del);
+  digitalWrite(servo, HIGH);
+  delayMicroseconds(del);
+  digitalWrite(servo, LOW);
 }
 
 // calculates the angle of a linear function created using the current location and of a target one (not the target one, although it can do that)
@@ -307,8 +306,14 @@ void turn(String directionn){ // l for left, r for right s for straight
 // it calculates the angle using tan(dlon / dlan) d is delta
 float calcAngle(float trlat, float trlon){
   getGPS();
+  float angle = tan((clon - trlon) / (clat - trlat));
 
-  return tan((clon - trlon) / (clat - trlat));
+  if (angle < 0){
+    angle = angle + 360;
+  }
+
+
+  return angle;
 }
 
 // tells the dc motors to which direction to spin and at what speed
@@ -526,22 +531,20 @@ void getGPS(){
 void trunkState(String in){
   if (in == "0" || in == "1"){
     int state = in.toInt();
-    trunk.attach(trunkPin);
 
     switch(state){
       case 0:
-        trunk.write(180);
+        useServo(180, trunkPin);
         Serial.println("closing trunk");
         break;
         
       case 1:
-        trunk.write(0);
+        useServo(0, trunkPin);
         Serial.println("opening trunk");
         break;  
         
     }
     delay(1000);
-    trunk.detach();
   }
 }
 
