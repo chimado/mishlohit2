@@ -29,6 +29,7 @@ bool authorized = false; // indicates if the connected device is authorized
 int steeringDirection = 77; // stores the current steering direction, values are "l", "r" and "s"
 int angle; // is the angle from the target
 bool isAfterDrive = false;
+bool isObsticlePresent = false;
 
 // constants
 // these store the speed pwm values in text form
@@ -68,6 +69,7 @@ void setup() {
 
 void loop() {
   // checks which phase is the code in, and activates functions accordingly
+  /*
   if (phase == 0){
     stod();
   }
@@ -78,7 +80,11 @@ void loop() {
 
   else{
     stod();
-  }
+  }*/
+  drive(1, crawl);
+  turn(l);
+  //checkFront();
+  checkSides();
 }
 
 // initializes the navigation phase
@@ -120,11 +126,11 @@ void calibrationCheck(){
 
 // is responsible for the navigation phase
 void nav(){
+  checkSides();
+  checkFront();
   float angle = calcAngle(plat, plon); // calculates the current angle
   float anglec = calcAngle(tlat, tlon); // calculates the correct angle
   float angled = angle - anglec;
-  checkSides();
-  checkFront();
 
   if (atTarget() == true && isAfterDrive == true){
     phase = 0;
@@ -138,40 +144,42 @@ void nav(){
     loop();
   }
 
-  if (isStuck() == true){
-    turn(r);
-    drive(0, slow);
-    delay(200);
-    turn(s);
-    drive(0, crawl);
-  }
+  if (isObsticlePresent == false){
+    if (isStuck() == true){
+      turn(r);
+      drive(0, slow);
+      delay(200);
+      turn(s);
+      drive(0, crawl);
+    }
 
-  else if (abs(angled) > 90 && abs(angled) < 270){
-     turnAround();
-     Serial.print("turn around because angled is ");
-     Serial.print(angled);
-     Serial.println("");
-  }
+    else if (abs(angled) > 90 && abs(angled) < 270){
+      turnAround();
+      Serial.print("turn around because angled is ");
+      Serial.print(angled);
+      Serial.println("");
+    }
   
-  else if (abs(angled) < 5){ // this means it's on the right path
-    turn(s);
-    Serial.print("it's on the right path because angled is ");
-    Serial.print(angled);
-    Serial.println("");
-  }
+    else if (abs(angled) < 5){ // this means it's on the right path
+      turn(s);
+      Serial.print("it's on the right path because angled is ");
+      Serial.print(angled);
+      Serial.println("");
+    }
   
-  else if ((angle < 90 && angled < 0) || (angle > 90 && angled > 0)){ // this means it needs to turn right
-    turn(l);
-    Serial.print("turn left because angled is ");
-    Serial.print(angled);
-    Serial.println("");
-  }
+    else if ((angle < 90 && angled < 0) || (angle > 90 && angled > 0)){ // this means it needs to turn right
+      turn(l);
+      Serial.print("turn left because angled is ");
+      Serial.print(angled);
+      Serial.println("");
+    }
 
-  else if ((angle < 90 && angled > 0) || (angle > 90 && angled < 0)){ // this means it needs to turn left
-    turn(r);
-    Serial.print("turn right because angled is ");
-    Serial.print(angled);
-    Serial.println("");
+    else if ((angle < 90 && angled > 0) || (angle > 90 && angled < 0)){ // this means it needs to turn left
+      turn(r);
+      Serial.print("turn right because angled is ");
+      Serial.print(angled);
+      Serial.println("");
+    }
   }
   
   plat = clat;
@@ -198,57 +206,32 @@ bool isStuck(){
 
 // checks for objects on the sides, reacts accordingly
 void checkSides(){
-  if (getIR(rir) < 40 || getIR(lir) < 40){
-    if (steeringDirection == l && getIR(lir) < 40){
-      drive(0, slow);
-      delay(500);
-      drive(1, crawl);
-      turn(r);
-    }
-   
-    else if (steeringDirection == r && getIR(rir) < 40){
-      drive(0, slow);
-      delay(500);
-      drive(1, crawl);
-      turn(l);
-    }
+  if (getIR(lir) < 40){
+    isObsticlePresent = true;
+    turn(r);
+    delay(500);
+  }
 
-    else if (isSideClear(lir) == false){
-      turn(r);
-    }
-
-    else if (isSideClear(rir) == false){
-      turn(l);
-    }
+  else if (getIR(rir) < 40){
+    isObsticlePresent = true;
+    turn(l);
+    delay(500);
   }
 
   else{
-    drive(1, crawl);
-  }
-}
-
-bool isSideClear(SharpIR sensor){
-  int tempd = getIR(sensor);
-  if (tempd < 40){
-    delay(100);
-    if (tempd - getIR(sensor) > 2){
-      return false;
-    }
-  }
-
-  else{
-    return true;
+    isObsticlePresent = false;
   }
 }
 
 // checks for objects in front of itself, reacts accordingly
 void checkFront(){
-  if (getIR(frir) < 40 || getIR(lir) < 40){
+  if (getIR(frir) < 40 || getIR(flir) < 40){
     passObject();
+    isObsticlePresent = true;
    }
 
    else{
-    drive(1, crawl);
+    isObsticlePresent = false;
    }
 }
 
@@ -256,24 +239,27 @@ void checkFront(){
 void passObject(){
   drive(0, slow);
   turn(l);
-  delay(500);
+  delay(700);
   turn(r);
   drive(1, crawl);
-  delay(500);
-  checkFront();
+  delay(400);
+  Serial.println("h");
 
   int pd = getIR(lir); // the difference between the previous getLIR and the current one
-  delay(100);
+  delay(50);
 
-  while(abs(pd - getIR(lir)) > 1){ // continues turning until it's perpendicual to the object
-    delay(100);
-    checkFront();
-   }
+  while(abs(pd - getIR(lir)) > 1 && getIR(flir) < 40){ // continues turning until it's perpendicular to the object
+    if (getIR(frir) < 40 || getIR(lir) < 40){
+    passObject();
+    isObsticlePresent = true;
+    }
 
-   if (getIR(lir) > 40){ // makes sure it won't crash into anything
-    checkFront();
-   }
+    pd = getIR(lir);
+    delay(50);
   }
+
+  turn(s);
+}
 
 // checks if it's at the target location
 bool atTarget(){
@@ -301,7 +287,7 @@ void useServo(int angle, int servo){
       break;
 
     case 90:;
-      analogWrite(servo, 180);
+      analogWrite(servo, 130);
       break;
 
     case 180:
@@ -327,7 +313,7 @@ float calcAngle(float trlat, float trlon){
 
 // tells the dc motors to which direction to spin and at what speed
 // use drive(direction{1 or 0}, power {0-255})
-void drive(int d, int p){ 
+void drive(int d, int p){
   analogWrite(mpwm, p); // set power
     
   if (d == 0){ // if d = o it goes backwards, and if it's 1 it goes forwards
@@ -455,7 +441,7 @@ int getIR(SharpIR sensor){
   int dv = 15;
   fdistance = sensor.getDistance();
 
-  for (int i = 0; i < 100; i++){
+  for (int i = 0; i < 200; i++){
     cdistance = sensor.getDistance();
     adistance = (adistance + cdistance) / 2;
 
