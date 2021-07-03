@@ -109,7 +109,7 @@ void navinit(){
 
 // checks if there's an object in front of it during calibration
 void calibrationCheck(){
-  for (int i = 0; i < 500; i++){
+  for (int i = 0; i < 100; i++){
     if(spaceForDriveStart() == false){
       sstop();
       Serial.println("error - not enough space in front to start drive");
@@ -121,14 +121,11 @@ void calibrationCheck(){
 
 // is responsible for the navigation phase
 void nav(){
-  checkSides();
-  checkFront();
+  checkSurroundings();
   float angle = calcAngle(plat, plon); // calculates the current angle
-  checkSides();
-  checkFront();
+  checkSurroundings();
   float anglec = calcAngle(tlat, tlon); // calculates the correct angle
-  checkSides();
-  checkFront();
+  checkSurroundings();
   float angled = angle - anglec;
 
   if (atTarget() == true && isAfterDrive == true){
@@ -142,12 +139,10 @@ void nav(){
     sstop();
     loop();
   }
-
-  checkSides();
-  checkFront();
-
+  
   if (isObsticlePresent == false){
     if (isStuck() == true){
+      Serial.println("it's stuck");
       turn(r);
       drive(0, slow);
       delay(200);
@@ -155,7 +150,7 @@ void nav(){
       drive(0, crawl);
     }
 
-    else if (abs(angled) > 90 && abs(angled) < 270){
+    else if (abs(angled) > 90 && abs(angled) < 270){ // this means it needs to turn around because the angle difference is over 90 degrees
       turnAround();
       Serial.print("turn around because angled is ");
       Serial.print(angled);
@@ -184,17 +179,24 @@ void nav(){
     }
   }
   
-  checkSides();
-  checkFront();
+  checkSurroundings();
   plat = clat;
   plon = clon;
+}
+
+// checks the surroundings for any obsticles and reacts accordingly
+void checkSurroundings(){
+  for (int i = 0; i < 200; i++){
+    checkSides();
+    checkFront();
+  }
 }
 
 // makes the system turn around 180 degrees
 void turnAround(){
   turn(r);
   drive(0, slow);
-  delay(500);
+  delay(1000);
   turn(s);
   drive(1, crawl);
 }
@@ -286,15 +288,15 @@ void turn(int directionn){ // l for left, r for right s for straight
 // changes the angle of a given servo to a given angle
 void useServo(int angle, int servo){
   switch(angle){
-    case 0:
+    case 0: // turns left
       analogWrite(servo, 100);
       break;
 
-    case 90:;
-      analogWrite(servo, 130);
+    case 90: // turns straight
+      analogWrite(servo, 136);
       break;
 
-    case 180:
+    case 180: // turns right
       analogWrite(servo, 254);
       break;
   }
@@ -335,7 +337,7 @@ void drive(int d, int p){
 void sstop(){
   drive(0, fast);
   turn(s);
-  delay(50);
+  delay(100);
   analogWrite(mpwm, 0);
   digitalWrite(motorf, LOW);
   digitalWrite(motorb, LOW);
@@ -525,7 +527,6 @@ void getGPS(){
     // sets the global variables to the current location
     clat = flat == TinyGPS::GPS_INVALID_F_ANGLE ? 0.0 : flat;
     clon = flon == TinyGPS::GPS_INVALID_F_ANGLE ? 0.0 : flon;
-    delay(500);
   }
 }
 
