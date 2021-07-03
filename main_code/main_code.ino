@@ -115,20 +115,16 @@ void calibrationCheck(){
       phase = 0;
       loop();
     }
-
-    delay(1);
   }
 }
 
 // is responsible for the navigation phase
 void nav(){
-  float angled = angle - calcAngle(tlat, tlon); // calculates the angle difference between the current direction and the correct one
-  float angle = calcAngle(plat, plon);
-  Serial.println(angled);
-
-  if (angled < 0){
-    angled = angled + 360;
-  }
+  float angle = calcAngle(plat, plon); // calculates the current angle
+  float anglec = calcAngle(tlat, tlon); // calculates the correct angle
+  float angled = angle - anglec;
+  checkSides();
+  checkFront();
 
   if (atTarget() == true && isAfterDrive == true){
     phase = 0;
@@ -143,36 +139,50 @@ void nav(){
   }
 
   if (isStuck() == true){
-    drive(1, slow);
+    turn(r);
+    drive(0, slow);
+    delay(200);
+    turn(s);
+    drive(0, crawl);
   }
 
-  else if (angled > 5 && angled < 355 && angled > 90 && angled < 270){
+  else if (abs(angled) > 90 && abs(angled) < 270){
      turnAround();
+     Serial.print("turn around because angled is ");
+     Serial.print(angled);
+     Serial.println("");
   }
   
-  else if (angled > 5 && angled < 355 && angled > 270){ // this means it needs to turn right
+  else if ((angle < 90 && angled < 0) || (angle > 90 && angled > 0)){ // this means it needs to turn right
     turn(r);
+    Serial.print("turn right because angled is ");
+    Serial.print(angled);
+    Serial.println("");
   }
 
-  else if (angled > 5 && angled < 90){ // this means it needs to turn left
+  else if ((angle < 90 && angled > 0) || (angle > 90 && angled < 0)){ // this means it needs to turn left
     turn(l);
+    Serial.print("turn left because angled is ");
+    Serial.print(angled);
+    Serial.println("");
   }
 
   else{ // this means it's on the right path
     turn(s);
+    Serial.print("it's on the right path because angled is ");
+    Serial.print(angled);
+    Serial.println("");
   }
   
   plat = clat;
   plon = clon;
-  checkSides();
-  checkFront();
 }
 
 // makes the system turn around 180 degrees
 void turnAround(){
   turn(r);
-  drive(0, crawl);
-  delay(1000);
+  drive(0, slow);
+  delay(500);
   turn(s);
   drive(1, crawl);
 }
