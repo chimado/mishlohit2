@@ -87,7 +87,7 @@ void navinit(){
   float lat1, lon1, lat2, lon2; // variables to store locations temporarily
 
   trunkState("0");
-  turn("s");
+  turn(s);
   delay(100);
 
   lat1 = clat;
@@ -153,23 +153,23 @@ void nav(){
      Serial.println("");
   }
   
-  else if ((angle < 90 && angled < 0) || (angle > 90 && angled > 0)){ // this means it needs to turn right
-    turn(r);
-    Serial.print("turn right because angled is ");
+  else if (abs(angled) < 5){ // this means it's on the right path
+    turn(s);
+    Serial.print("it's on the right path because angled is ");
     Serial.print(angled);
     Serial.println("");
   }
-
-  else if ((angle < 90 && angled > 0) || (angle > 90 && angled < 0)){ // this means it needs to turn left
+  
+  else if ((angle < 90 && angled < 0) || (angle > 90 && angled > 0)){ // this means it needs to turn right
     turn(l);
     Serial.print("turn left because angled is ");
     Serial.print(angled);
     Serial.println("");
   }
 
-  else{ // this means it's on the right path
-    turn(s);
-    Serial.print("it's on the right path because angled is ");
+  else if ((angle < 90 && angled > 0) || (angle > 90 && angled < 0)){ // this means it needs to turn left
+    turn(r);
+    Serial.print("turn right because angled is ");
     Serial.print(angled);
     Serial.println("");
   }
@@ -189,7 +189,7 @@ void turnAround(){
 
 // checks if it's stuck
 bool isStuck(){
-  if (abs(plat - clat) < 0.000002 && abs(plon - clon) < 0.000002){
+  if (abs(plat - clat) < 0.000005 && abs(plon - clon) < 0.000005){
     return true;
   }
 
@@ -199,14 +199,14 @@ bool isStuck(){
 // checks for objects on the sides, reacts accordingly
 void checkSides(){
   if (getIR(rir) < 40 || getIR(lir) < 40){
-    if (steeringDirection == "l" && getIR(lir) < 40){
+    if (steeringDirection == l && getIR(lir) < 40){
       drive(0, slow);
       delay(500);
       drive(1, crawl);
       turn(r);
     }
    
-    else if (steeringDirection == "r" && getIR(rir) < 40){
+    else if (steeringDirection == r && getIR(rir) < 40){
       drive(0, slow);
       delay(500);
       drive(1, crawl);
@@ -279,7 +279,7 @@ void passObject(){
 bool atTarget(){
   getGPS();
 
-  if (abs(clat - tlat) < 0.00001 && abs(clon - tlon) < 0.00001){
+  if (abs(clat - tlat) < 0.00005 && abs(clon - tlon) < 0.00005){
     Serial.println("destination reached");
     return true;
   }
