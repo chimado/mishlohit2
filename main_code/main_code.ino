@@ -69,7 +69,6 @@ void setup() {
 
 void loop() {
   // checks which phase is the code in, and activates functions accordingly
-  /*
   if (phase == 0){
     stod();
   }
@@ -80,11 +79,7 @@ void loop() {
 
   else{
     stod();
-  }*/
-  drive(1, crawl);
-  turn(l);
-  //checkFront();
-  checkSides();
+  }
 }
 
 // initializes the navigation phase
@@ -129,7 +124,11 @@ void nav(){
   checkSides();
   checkFront();
   float angle = calcAngle(plat, plon); // calculates the current angle
+  checkSides();
+  checkFront();
   float anglec = calcAngle(tlat, tlon); // calculates the correct angle
+  checkSides();
+  checkFront();
   float angled = angle - anglec;
 
   if (atTarget() == true && isAfterDrive == true){
@@ -143,6 +142,9 @@ void nav(){
     sstop();
     loop();
   }
+
+  checkSides();
+  checkFront();
 
   if (isObsticlePresent == false){
     if (isStuck() == true){
@@ -182,6 +184,8 @@ void nav(){
     }
   }
   
+  checkSides();
+  checkFront();
   plat = clat;
   plon = clon;
 }
@@ -226,6 +230,7 @@ void checkSides(){
 // checks for objects in front of itself, reacts accordingly
 void checkFront(){
   if (getIR(frir) < 40 || getIR(flir) < 40){
+    sstop();
     passObject();
     isObsticlePresent = true;
    }
@@ -243,7 +248,6 @@ void passObject(){
   turn(r);
   drive(1, crawl);
   delay(400);
-  Serial.println("h");
 
   int pd = getIR(lir); // the difference between the previous getLIR and the current one
   delay(50);
@@ -265,7 +269,7 @@ void passObject(){
 bool atTarget(){
   getGPS();
 
-  if (abs(clat - tlat) < 0.00005 && abs(clon - tlon) < 0.00005){
+  if (abs(clat - tlat) < 0.00007 && abs(clon - tlon) < 0.00007){
     Serial.println("destination reached");
     return true;
   }
@@ -329,6 +333,9 @@ void drive(int d, int p){
 
 // stop driving, set speed to 0
 void sstop(){
+  drive(0, fast);
+  turn(s);
+  delay(50);
   analogWrite(mpwm, 0);
   digitalWrite(motorf, LOW);
   digitalWrite(motorb, LOW);
