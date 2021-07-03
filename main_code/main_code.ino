@@ -37,8 +37,8 @@ const int slow = 180;
 const int medium = 210;
 const int fast = 255;
 // these store the values for the steering
-const int r = 0;
-const int l = 180;
+const int l = 0;
+const int r = 180;
 const int s = 90;
 
 // these store the gps coordinates, lat - latitude lon - longitude t - target o - origin c - current p - previous
@@ -61,8 +61,8 @@ void setup() {
   pinMode(mpwm, OUTPUT);
 
   // set initial values
-  //trunkState("1");
-  //turn(s);
+  trunkState("1");
+  turn(s);
   sstop();
 }
 
@@ -179,7 +179,7 @@ void turnAround(){
 
 // checks if it's stuck
 bool isStuck(){
-  if (plat == clat && plon == clon){
+  if (abs(plat - clat) < 0.000002 && abs(plon - clon) < 0.000002){
     return true;
   }
 
@@ -287,11 +287,11 @@ void turn(int directionn){ // l for left, r for right s for straight
 void useServo(int angle, int servo){
   switch(angle){
     case 0:
-      analogWrite(servo, 90);
+      analogWrite(servo, 100);
       break;
 
     case 90:;
-      analogWrite(servo, 170);
+      analogWrite(servo, 180);
       break;
 
     case 180:
