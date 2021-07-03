@@ -46,7 +46,7 @@ float tlat, tlon, olat, olon, clat, clon, plat, plon;
 
 // IO pins
 const int trunkPin = 3;
-const int steeringPin = 5;
+const int steeringPin = 9;
 const int motorb = 7;
 const int motorf = 8;
 const int mpwm = 6;
@@ -59,8 +59,6 @@ void setup() {
   pinMode(motorf, OUTPUT);
   pinMode(motorb, OUTPUT);
   pinMode(mpwm, OUTPUT);
-  pinMode(trunkPin, OUTPUT);
-  pinMode(steeringPin, OUTPUT);
 
   // set initial values
   //trunkState("1");
@@ -82,12 +80,12 @@ void loop() {
   else{
     stod();
   }*/
-  turn(l);
-  delay(1500);
-  turn(r);
-  delay(1500);
-  turn(s);
-  delay(1500);
+ turn(l);
+ delay(1500);
+ turn(s);
+ delay(1500);
+ turn(r);
+ delay(1500);
 }
 
 // initializes the navigation phase
@@ -288,7 +286,7 @@ bool atTarget(){
 
 // turns the steering system to the selected direction
 void turn(int directionn){ // l for left, r for right s for straight
-  useServo(directionn, trunkPin);
+  useServo(directionn, steeringPin);
   steeringDirection = directionn;
 }
 
@@ -297,12 +295,15 @@ void useServo(int angle, int servo){
   switch(angle){
     case 0:
       analogWrite(servo, 90);
+      break;
 
     case 90:
       analogWrite(servo, 180);
+      break;
 
     case 180:
       analogWrite(servo, 254);
+      break;
   }
 }
 
