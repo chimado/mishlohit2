@@ -68,7 +68,6 @@ void setup() {
 
 void loop() {
   // checks which phase is the code in, and activates functions accordingly
-  /*
   if (phase == 0){
     stod();
   }
@@ -79,13 +78,7 @@ void loop() {
 
   else{
     stod();
-  }*/
- turn(l);
- delay(1500);
- turn(s);
- delay(1500);
- turn(r);
- delay(1500);
+  }
 }
 
 // initializes the navigation phase
@@ -290,15 +283,15 @@ void turn(int directionn){ // l for left, r for right s for straight
   steeringDirection = directionn;
 }
 
-// changes the angle of a given servo to a given angle, pangle is the previous angle of the servo
+// changes the angle of a given servo to a given angle
 void useServo(int angle, int servo){
   switch(angle){
     case 0:
       analogWrite(servo, 90);
       break;
 
-    case 90:
-      analogWrite(servo, 180);
+    case 90:;
+      analogWrite(servo, 170);
       break;
 
     case 180:
