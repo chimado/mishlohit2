@@ -95,7 +95,7 @@ void nav(){
   tlat = clat;
 
   tlat = tlat * 110947.2;
-  olat = olan * 110947.2;
+  olat = olat * 110947.2;
   tlon = tlon * 288200;
   olon = olon * 288200;
   Serial.print("the velocity was ");
