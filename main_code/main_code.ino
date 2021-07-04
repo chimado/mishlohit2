@@ -85,12 +85,15 @@ void navinit(){
 
 // is responsible for the navigation phase
 void nav(){
-  drive(1, fast);
+  drive(1, medium);
   delay(1000);
+  drive(1, fast);
+  delay(2000);
+  getGPS();
   drive(0, fast);
   delay(100);
-
-  getGPS();
+  sstop();
+ 
   tlon = clon;
   tlat = clat;
 
@@ -99,7 +102,7 @@ void nav(){
   tlon = tlon * 288200;
   olon = olon * 288200;
   Serial.print("the velocity was ");
-  Serial.print(((1/sin(atan((tlat - olat) / (tlon - olon))))*(tlat - olat)) / 2);
+  Serial.print(((1/sin(atan((tlat - olat) / (tlon - olon))))*(tlat - olat)) / 4);
   Serial.print("meters per second");
   Serial.println("");
 
