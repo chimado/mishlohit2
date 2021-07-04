@@ -33,8 +33,8 @@ bool isObsticlePresent = false;
 
 // constants
 // these store the speed pwm values in text form
-const int crawl = 130;
-const int slow = 180;
+const int crawl = 140;
+const int slow = 190;
 const int medium = 210;
 const int fast = 255;
 // these store the values for the steering
@@ -49,7 +49,7 @@ float tlat, tlon, olat, olon, clat, clon, plat, plon;
 const int trunkPin = 3;
 const int steeringPin = 9;
 const int motorb1 = 2;
-const int morotb2 = 13;
+const int motorb2 = 13;
 const int motorf = 8;
 const int mpwm1 = 5;
 const int mpwm2 = 6;
@@ -219,13 +219,11 @@ void checkSides(){
   if (getIR(lir) < 40){
     isObsticlePresent = true;
     turn(r);
-    delay(500);
   }
 
   else if (getIR(rir) < 40){
     isObsticlePresent = true;
     turn(l);
-    delay(500);
   }
 
   else{
@@ -253,7 +251,6 @@ void passObject(){
   delay(700);
   turn(r);
   drive(1, crawl);
-  delay(400);
 
   int pd = getIR(lir); // the difference between the previous getLIR and the current one
   delay(50);
@@ -297,7 +294,7 @@ void useServo(int angle, int servo){
       break;
 
     case 90: // turns straight
-      analogWrite(servo, 136);
+      analogWrite(servo, 180);
       break;
 
     case 180: // turns right
