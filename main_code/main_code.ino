@@ -48,9 +48,11 @@ float tlat, tlon, olat, olon, clat, clon, plat, plon;
 // IO pins
 const int trunkPin = 3;
 const int steeringPin = 9;
-const int motorb = 7;
+const int motorb1 = 2;
+const int morotb2 = 13;
 const int motorf = 8;
-const int mpwm = 6;
+const int mpwm1 = 5;
+const int mpwm2 = 6;
 
 void setup() {
   Serial.begin(9600); // sets baud rate for arduino serial
@@ -58,8 +60,10 @@ void setup() {
   
   // pin attachment
   pinMode(motorf, OUTPUT);
-  pinMode(motorb, OUTPUT);
-  pinMode(mpwm, OUTPUT);
+  pinMode(motorb1, OUTPUT);
+  pinMode(motorb2, OUTPUT);
+  pinMode(mpwm1, OUTPUT);
+  pinMode(mpwm2, OUTPUT);
 
   // set initial values
   trunkState("1");
@@ -320,16 +324,19 @@ float calcAngle(float trlat, float trlon){
 // tells the dc motors to which direction to spin and at what speed
 // use drive(direction{1 or 0}, power {0-255})
 void drive(int d, int p){
-  analogWrite(mpwm, p); // set power
+  analogWrite(mpwm1, p); // set power
+  analogWrite(mpwm2, p);
     
   if (d == 0){ // if d = o it goes backwards, and if it's 1 it goes forwards
     digitalWrite(motorf, LOW);
-    digitalWrite(motorb, HIGH);
+    digitalWrite(motorb1, HIGH);
+    digitalWrite(motorb2, HIGH);
   }
 
   else{
     digitalWrite(motorf, HIGH);
-    digitalWrite(motorb, LOW);
+    digitalWrite(motorb1, LOW);
+    digitalWrite(motorb2, LOW);
   }
 }
 
@@ -338,9 +345,11 @@ void sstop(){
   drive(0, fast);
   turn(s);
   delay(100);
-  analogWrite(mpwm, 0);
+  analogWrite(mpwm1, 0);
+  analogWrite(mpwm2, 0);
   digitalWrite(motorf, LOW);
-  digitalWrite(motorb, LOW);
+  digitalWrite(motorb1, LOW);
+  digitalWrite(motorb2, LOW);
 }
 
 // the start of drive phase function, it's responsible for phases 0 and 2
